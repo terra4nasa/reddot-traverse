@@ -86,6 +86,10 @@ export const HUD_PANELS: HudPanelDef[] = [
 
 export const HUD_PANEL_ORDER: HudPanelId[] = ["control", "nav", "eva", "bio", "terrain", "rad", "wx", "location", "comms", "minimap"];
 
+/** bump when the stock panel arrangement changes — persisted layouts from an
+    older version are discarded once so everyone lands on the clean default */
+export const HUD_LAYOUT_VERSION = 2;
+
 export function hudPanelDef(id: HudPanelId): HudPanelDef {
   return HUD_PANELS.find((d) => d.id === id) ?? HUD_PANELS[0];
 }

@@ -11,6 +11,7 @@ import { HAZARDS, bestBaseFor, hazardAlertText, type HazardDef, type HazardId } 
 import {
   HUD_PANELS,
   HUD_PANEL_ORDER,
+  HUD_LAYOUT_VERSION,
   PRESET_PANEL_OPEN,
   clampPanelRect,
   defaultHudPanels,
@@ -111,7 +112,7 @@ export const VISOR_PRESET: Record<"minimal" | "standard" | "full", VisorPrefs> =
   full: { nav: true, eva: true, bio: true, rad: true, terrain: true, comms: true, hazards: true, profile: true, helmet: true, reticle: true, compass: true, minimap: true, shadows: true },
 };
 
-export const DEFAULT_VISOR_PREFS: VisorPrefs = { ...VISOR_PRESET.standard };
+export const DEFAULT_VISOR_PREFS: VisorPrefs = { ...VISOR_PRESET.full };
 
 export interface WalkSim {
   active: boolean;
@@ -254,6 +255,7 @@ interface Persisted {
   site: SiteState;
   hudPanels?: Partial<Record<HudPanelId, HudPanelState>>; // floating panel layout
   hudZ?: number;
+  hudLayoutV?: number; // stock-layout version — mismatch discards the saved layout once
 }
 
 const DEFAULT_EVA: EvaParams = { crew: 2, speedKmh: 2.6, suitHours: 8, startLst: 9 };
@@ -324,24 +326,29 @@ function buildHudPanels(
 
 function loadPersisted(): Persisted {
   if (typeof window === "undefined") {
-    return { customLayers: [], route: [], eva: DEFAULT_EVA, visorPrefs: DEFAULT_VISOR_PREFS, bootDone: false, site: { ...DEFAULT_SITE } };
+    return { customLayers: [], route: [], eva: DEFAULT_EVA, visorPrefs: DEFAULT_VISOR_PREFS, bootDone: false, site: { ...DEFAULT_SITE }, hudLayoutV: HUD_LAYOUT_VERSION };
   }
   try {
     const raw = localStorage.getItem(PERSIST_KEY);
     if (!raw) throw new Error("empty");
     const p = JSON.parse(raw) as Partial<Persisted>;
+    /* layout saved by an older version of the stock arrangement → discard it
+       once: panels snap to the current clean default (full preset) instead of
+       restoring a scattered or half-off-screen saved layout */
+    const layoutStale = p.hudLayoutV !== HUD_LAYOUT_VERSION;
     return {
       customLayers: p.customLayers ?? [],
       route: p.route ?? [],
       eva: p.eva ?? DEFAULT_EVA,
-      visorPrefs: { ...DEFAULT_VISOR_PREFS, ...(p.visorPrefs ?? {}) },
+      visorPrefs: layoutStale ? { ...VISOR_PRESET.full } : { ...DEFAULT_VISOR_PREFS, ...(p.visorPrefs ?? {}) },
       bootDone: p.bootDone ?? false,
       site: p.site ?? { ...DEFAULT_SITE },
-      hudPanels: p.hudPanels ?? undefined,
+      hudPanels: layoutStale ? undefined : (p.hudPanels ?? undefined),
       hudZ: p.hudZ ?? 1,
+      hudLayoutV: HUD_LAYOUT_VERSION,
     };
   } catch {
-    return { customLayers: [], route: [], eva: DEFAULT_EVA, visorPrefs: DEFAULT_VISOR_PREFS, bootDone: false, site: { ...DEFAULT_SITE } };
+    return { customLayers: [], route: [], eva: DEFAULT_EVA, visorPrefs: DEFAULT_VISOR_PREFS, bootDone: false, site: { ...DEFAULT_SITE }, hudLayoutV: HUD_LAYOUT_VERSION };
   }
 }
 
@@ -364,6 +371,7 @@ export const useStore = create<AppStore>((set, get) => {
       site: s.site,
       hudPanels: s.hudPanels,
       hudZ: s.hudZ,
+      hudLayoutV: HUD_LAYOUT_VERSION,
     };
     localStorage.setItem(PERSIST_KEY, JSON.stringify(data));
   };
