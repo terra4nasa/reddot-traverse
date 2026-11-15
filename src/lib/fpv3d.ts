@@ -1,4 +1,4 @@
-// Red Dot Traverse first-person WebGL engine — real-time 3D Mars surface scene.
+// ARES-VIS first-person WebGL engine — real-time 3D Mars surface scene.
 //
 // Terrain : HRSC-MOLA hybrid DEM (200 m/px) displaced mesh + fractal detail,
 //           draped with the Esri/CTX 20 m/px optical window, exp2 dust fog,
@@ -14,8 +14,9 @@
 import * as THREE from "three";
 import { loadFpvEnv, elevAt, sunElevAt, approachAngle, type FpvEnv } from "./fpv";
 import { useStore } from "./store";
-import { SITE, POIS } from "./data";
+import { SITE } from "./data";
 import { slopeAdjustedSpeed } from "./mars";
+import { structureNodes, type StructureNode } from "./structures";
 
 /* ---------------- shared camera bus (HUD reads without React re-render) --- */
 export interface CaptureTargetInfo {
@@ -41,16 +42,29 @@ export const camBus = {
   offRouteM: 0,
   slopeDeg: 0,
   elevM: 0,
+  roverBattery: 100, // rover battery % — published by the WalkEngine
+  nearStructure: null as import("./structures").StructureNode | null,
   target: null as CaptureTargetInfo | null,
 };
 
-/* on-screen pad input — HUD D-pad / DASH button write, the engine reads */
-export const walkInput = { fwd: 0, strafe: 0, dash: false };
+/* on-screen pad input — HUD D-pad / DASH / JUMP buttons write, the engine reads */
+export const walkInput = { fwd: 0, strafe: 0, dash: false, jump: false };
 
 /* sample-capture handshake — HUD [E] / button bumps the nonce, engine collects */
 let collectNonce = 0;
 export function requestSampleCollect() {
   collectNonce++;
+}
+
+/* structure-enter handshake — HUD [E] near a structure / ENTER button */
+export const structBus = {
+  req: 0,
+  node: null as import("./structures").StructureNode | null,
+};
+export function requestStructureEnter(node: import("./structures").StructureNode | null) {
+  if (!node) return;
+  structBus.req++;
+  structBus.node = node;
 }
 
 /* E2E/debug: teleport the astronaut (consumed by the running scene) */
@@ -59,8 +73,16 @@ export function debugTeleport(lon: number, lat: number) {
   teleportReq = { lon, lat };
 }
 
+/* debug handle (harmless in prod, used by E2E checks) */
+if (typeof window !== "undefined") {
+  (window as unknown as { __ARES_FPV__?: object }).__ARES_FPV__ = { debugTeleport, walkInput, structBus, camBus, requestStructureEnter, get nodes() { return structureNodesLive; } };
+}
+
 /* E2E/debug: live list of sample-target positions (filled at scene build) */
 export const debugSamples: Array<{ code: string; lon: number; lat: number }> = [];
+
+/* enterable structures for the CURRENT scene (rebuilt per site/route change) */
+let structureNodesLive: StructureNode[] = [];
 
 const RAD = Math.PI / 180;
 
@@ -806,12 +828,12 @@ export async function createFpvScene(canvas: HTMLCanvasElement, opts?: FpvSceneO
 
   /* ---- InSight lander at the base waypoint ---- */
   {
-    const base = POIS.find((p) => p.id === "base");
-    if (base) {
+    const baseWp = route[0];
+    if (baseWp) {
       /* park the lander ~8 m SE of the base pad so the spawn view is clear */
       const azL = 118 * RAD;
-      const x = toX(base.lon) + Math.sin(azL) * 8;
-      const z = toZ(base.lat) - Math.cos(azL) * 8;
+      const x = toX(baseWp.lon) + Math.sin(azL) * 8;
+      const z = toZ(baseWp.lat) - Math.cos(azL) * 8;
       const y = groundH(x, z);
       const lander = new THREE.Group();
       /* materials: bright anodized-gold bus · brushed-gray deck · cell-textured panels */
@@ -897,6 +919,238 @@ export async function createFpvScene(canvas: HTMLCanvasElement, opts?: FpvSceneO
       });
       scene.add(lander);
     }
+  }
+
+  /* ---- blinking beacons shared by the habitat / pad / caches ---- */
+  const blinkers: Array<{ mat: THREE.MeshBasicMaterial; phase: number }> = [];
+
+  /* ---- habitat complex at the base waypoint (opposite side from the lander) ---- */
+  {
+    const baseWp = route[0];
+    if (baseWp) {
+      const azH = 305 * RAD;
+      const hx = toX(baseWp.lon) + Math.sin(azH) * 16;
+      const hz = toZ(baseWp.lat) - Math.cos(azH) * 16;
+      const hy = groundH(hx, hz);
+      const hab = new THREE.Group();
+      hab.position.set(hx, hy, hz);
+      hab.rotation.y = 2.1;
+
+      const habWhite = new THREE.MeshStandardMaterial({ color: 0xdfe3e8, roughness: 0.5, metalness: 0.08 });
+      const habAccent = new THREE.MeshStandardMaterial({ color: 0xcf7a35, roughness: 0.55, metalness: 0.1 });
+      const habDark = new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.7, metalness: 0.05 });
+      const strut = new THREE.MeshStandardMaterial({ color: 0x8d939c, roughness: 0.5, metalness: 0.35 });
+      const panelM = new THREE.MeshStandardMaterial({ color: 0x1d2c46, roughness: 0.35, metalness: 0.25, emissive: 0x0a1526, emissiveIntensity: 0.5 });
+      const windowM = new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: 0.9 });
+      const padMarkM = new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.85 });
+      const beaconM = new THREE.MeshBasicMaterial({ color: 0xff5a5a, transparent: true, opacity: 0.9 });
+      const flagM = new THREE.MeshBasicMaterial({ color: 0xcf7a35, side: THREE.DoubleSide });
+      disposables.push(habWhite, habAccent, habDark, strut, panelM, windowM, padMarkM, beaconM, flagM);
+
+      /* pressurized dome habitat */
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(3.1, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), habWhite);
+      dome.position.y = 0.2;
+      dome.scale.y = 0.72;
+      const domeRing = new THREE.Mesh(new THREE.CylinderGeometry(3.12, 3.2, 0.5, 24), habAccent);
+      domeRing.position.y = 0.3;
+      /* dome windows */
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2 + 0.4;
+        const w = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.32, 0.06), windowM);
+        w.position.set(Math.cos(a) * 2.55, 1.35, Math.sin(a) * 2.55);
+        w.lookAt(Math.cos(a) * 4, 1.35, Math.sin(a) * 4);
+        hab.add(w);
+      }
+      /* airlock tunnel */
+      const airlock = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 2.6, 14), habWhite);
+      airlock.rotation.z = Math.PI / 2;
+      airlock.position.set(4.1, 0.9, 0);
+      /* crew modules — two cylinders with rounded caps */
+      const modGeo = new THREE.CylinderGeometry(1.05, 1.05, 5.0, 16);
+      const capGeo = new THREE.SphereGeometry(1.05, 16, 12);
+      for (const mz of [-1, 1]) {
+        const mod = new THREE.Mesh(modGeo, habWhite);
+        mod.rotation.x = Math.PI / 2;
+        mod.position.set(7.6, 1.05, mz * 1.55);
+        const capA = new THREE.Mesh(capGeo, habWhite);
+        capA.position.set(7.6, 1.05, mz * 1.55 - mz * 2.5);
+        const capB = new THREE.Mesh(capGeo, habWhite);
+        capB.position.set(7.6, 1.05, mz * 1.55 + mz * 2.5);
+        const stripe = new THREE.Mesh(new THREE.CylinderGeometry(1.07, 1.07, 0.35, 16), habAccent);
+        stripe.rotation.x = Math.PI / 2;
+        stripe.position.set(7.6, 1.05, mz * 1.55 - mz * 1.6);
+        const win = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.3, 0.06), windowM);
+        win.position.set(7.6, 1.35, mz * 1.55 + mz * 1.12);
+        hab.add(mod, capA, capB, stripe, win);
+      }
+      /* solar array wings on struts behind the modules */
+      for (const sx of [-1, 1]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.3, 8), strut);
+        post.position.set(7.6, 1.9, sx * 3.6);
+        post.rotation.x = sx * 0.35;
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.06, 2.0), panelM);
+        wing.position.set(7.6 + sx * 0.3, 2.7, sx * 4.6);
+        wing.rotation.x = 0.42;
+        hab.add(post, wing);
+      }
+      /* comms mast with blinking beacon */
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 6.4, 8), strut);
+      mast.position.set(-4.2, 3.2, -2.4);
+      const dish = new THREE.Mesh(new THREE.SphereGeometry(0.85, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2.4), habWhite);
+      dish.position.set(-4.2, 5.6, -2.4);
+      dish.rotation.x = Math.PI * 0.72;
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), beaconM);
+      beacon.position.set(-4.2, 6.45, -2.4);
+      blinkers.push({ mat: beaconM, phase: 0 });
+      hab.add(mast, dish, beacon);
+      /* landing pad with edge markers */
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(4.4, 4.8, 0.14, 28), habDark);
+      pad.position.set(0.5, 0.07, -7.6);
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const mk = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.1, 0.28), padMarkM.clone());
+        mk.position.set(0.5 + Math.cos(a) * 4.1, 0.17, -7.6 + Math.sin(a) * 4.1);
+        blinkers.push({ mat: mk.material as THREE.MeshBasicMaterial, phase: i * 0.7 });
+        hab.add(mk);
+      }
+      /* crew flag */
+      const fPole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.4, 6), strut);
+      fPole.position.set(-1.6, 1.2, -4.6);
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.62), flagM);
+      flag.position.set(-1.05, 2.0, -4.6);
+      flag.rotation.y = 0.35;
+      hab.add(fPole, flag);
+
+      hab.traverse((o) => {
+        if ((o as THREE.Mesh).isMesh) {
+          o.castShadow = SHADOWS;
+          o.receiveShadow = SHADOWS;
+        }
+      });
+      disposables.push(modGeo, capGeo);
+      scene.add(hab);
+    }
+  }
+
+  /* ---- site stations — enterable buildings at every waypoint: the hab dome
+   *  complex marks the base, and field lab / instrument cache / comms relay
+   *  cycle across the science stops (meshes + proximity nodes share coords) ---- */
+  {
+    const stWhite = new THREE.MeshStandardMaterial({ color: 0xdfe3e8, roughness: 0.5, metalness: 0.1 });
+    const stAccent = new THREE.MeshStandardMaterial({ color: 0xcf7a35, roughness: 0.55, metalness: 0.1 });
+    const stDark = new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.7 });
+    const stStrut = new THREE.MeshStandardMaterial({ color: 0x8d939c, roughness: 0.5, metalness: 0.35 });
+    const stPanel = new THREE.MeshStandardMaterial({ color: 0x1d2c46, roughness: 0.35, metalness: 0.25, emissive: 0x0a1526, emissiveIntensity: 0.55 });
+    const stWin = new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: 0.92 });
+    const stLight = new THREE.MeshBasicMaterial({ color: 0x54e0ff, transparent: true, opacity: 0.9 });
+    disposables.push(stWhite, stAccent, stDark, stStrut, stPanel, stWin, stLight);
+    const stations = structureNodes(route, toX, toZ);
+    structureNodesLive = stations;
+    const legGeoS = new THREE.CylinderGeometry(0.05, 0.05, 0.7, 6);
+    const mastGeoS = new THREE.CylinderGeometry(0.035, 0.045, 3.4, 6);
+    const lightGeoS = new THREE.SphereGeometry(0.09, 8, 6);
+    const padGeo = new THREE.CylinderGeometry(1.7, 1.9, 0.12, 20);
+    disposables.push(legGeoS, mastGeoS, lightGeoS, padGeo);
+    stations.forEach((n, i) => {
+      const g = new THREE.Group();
+      g.position.set(n.x, groundH(n.x, n.z), n.z);
+      g.rotation.y = i * 1.1 + 0.6;
+      /* landing pad under every station */
+      const pad = new THREE.Mesh(padGeo, stPanel);
+      pad.position.y = 0.06;
+      g.add(pad);
+      if (n.type === "hab") {
+        /* hab airlock — the enterable anchor of the dome complex (the dome
+         * itself is built separately as scenery at the pad center) */
+        const air = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 1.15, 12), stWhite);
+        air.position.y = 0.62;
+        const airTop = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.16, 12), stAccent);
+        airTop.position.y = 1.26;
+        const hatch = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 10), stDark);
+        hatch.rotation.x = Math.PI / 2;
+        hatch.position.set(0, 0.62, 0.56);
+        g.add(air, airTop, hatch);
+      } else if (n.type === "lab") {
+        /* pressurized work module: horizontal cylinder on legs, window strip,
+         * solar wing — the biggest off-base structure */
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 2.6, 14), stWhite);
+        body.rotation.z = Math.PI / 2;
+        body.position.y = 1.15;
+        const capA = new THREE.Mesh(new THREE.SphereGeometry(0.85, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), stAccent);
+        capA.rotation.z = -Math.PI / 2;
+        capA.position.set(1.3, 1.15, 0);
+        const capB = capA.clone();
+        capB.rotation.z = Math.PI / 2;
+        capB.position.set(-1.3, 1.15, 0);
+        const win = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.18, 0.06), stWin);
+        win.position.set(0, 1.25, 0.83);
+        for (const [lx, lz] of [[-0.9, 0.45], [0.9, 0.45], [-0.9, -0.45], [0.9, -0.45]] as const) {
+          const leg = new THREE.Mesh(legGeoS, stStrut);
+          leg.position.set(lx, 0.35, lz);
+          g.add(leg);
+        }
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.8), stPanel);
+        wing.position.set(-2.0, 1.7, 0);
+        wing.rotation.z = 0.35;
+        const wingStrut = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6), stStrut);
+        wingStrut.position.set(-1.5, 1.2, 0);
+        wingStrut.rotation.z = 0.4;
+        g.add(body, capA, capB, win, wing, wingStrut);
+      } else if (n.type === "cache") {
+        /* equipment shelter: crate on legs with a marked door + spares boxes */
+        const shelter = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.1, 1.3), stWhite);
+        shelter.position.y = 1.05;
+        const lid = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.12, 1.4), stAccent);
+        lid.position.y = 1.66;
+        const door = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.05), stDark);
+        door.position.set(0.3, 0.95, 0.66);
+        for (const [lx, lz] of [[-0.7, 0.5], [0.7, 0.5], [-0.7, -0.5], [0.7, -0.5]] as const) {
+          const leg = new THREE.Mesh(legGeoS, stStrut);
+          leg.position.set(lx, 0.35, lz);
+          g.add(leg);
+        }
+        const crate1 = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.4, 0.45), stDark);
+        crate1.position.set(-1.15, 0.3, 0.5);
+        const crate2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.4), stAccent);
+        crate2.position.set(-1.05, 0.66, 0.45);
+        crate2.rotation.y = 0.5;
+        g.add(shelter, lid, door, crate1, crate2);
+      } else {
+        /* comms / power relay: tall mast + dish + battery bank + solar wing */
+        const mast = new THREE.Mesh(mastGeoS, stStrut);
+        mast.position.y = 1.7;
+        const dish = new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2.6), stWhite);
+        dish.position.set(0, 3.3, 0);
+        dish.rotation.x = Math.PI / 1.7;
+        const bank = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.6, 0.7), stDark);
+        bank.position.set(0.15, 0.4, 0);
+        const solar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.7), stPanel);
+        solar.position.set(-0.9, 0.85, 0);
+        solar.rotation.z = 0.3;
+        const solarStrut = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6), stStrut);
+        solarStrut.position.set(-0.45, 0.45, 0);
+        solarStrut.rotation.z = 0.35;
+        const cross = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.07, 0.07), stAccent);
+        cross.position.y = 2.6;
+        g.add(mast, dish, bank, solar, solarStrut, cross);
+      }
+      /* status beacon + name label — makes the station findable from the pad */
+      const light = new THREE.Mesh(lightGeoS, stLight.clone());
+      light.position.y = n.type === "relay" ? 3.5 : 2.3;
+      g.add(light);
+      blinkers.push({ mat: light.material as THREE.MeshBasicMaterial, phase: 1 + i * 0.5 });
+      const label = makeLabelSprite(`${n.code} · ${n.label.toUpperCase()}`, n.type === "lab" ? "#ffb347" : "#54e0ff");
+      label.position.y = n.type === "relay" ? 4.1 : 2.9;
+      label.scale.set(3.2, 0.8, 1);
+      g.add(label);
+      g.traverse((o) => {
+        if ((o as THREE.Mesh).isMesh) {
+          o.castShadow = SHADOWS;
+          o.receiveShadow = SHADOWS;
+        }
+      });
+      scene.add(g);
+    });
   }
 
   /* ---- astronaut location beacon — pulsing rings + light pillar at the walker's feet ---- */
@@ -1055,8 +1309,15 @@ export async function createFpvScene(canvas: HTMLCanvasElement, opts?: FpvSceneO
   const onKeyDown = (e: KeyboardEvent) => {
     if (keyGuard(e)) return;
     if (useStore.getState().walk.active && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
+    if (e.code === "Space" && !e.repeat) walkInput.jump = true;
+    if (e.code === "KeyV" && !e.repeat && useStore.getState().walk.active && !useStore.getState().walk.readout?.finished) {
+      const w = useStore.getState();
+      w.setWalkVehicle(w.walk.vehicle === "rover" ? "foot" : "rover");
+      return;
+    }
     if (e.code === "KeyE" && !e.repeat) {
-      collectNonce++;
+      if (camBus.nearStructure && useStore.getState().walk.active) requestStructureEnter(camBus.nearStructure);
+      else collectNonce++;
       return;
     }
     pressed.add(e.code);
@@ -1089,10 +1350,21 @@ export async function createFpvScene(canvas: HTMLCanvasElement, opts?: FpvSceneO
     if (a && b) yaw = (Math.atan2(toX(b.lon) - toX(a.lon), -(toZ(b.lat) - toZ(a.lat))) * 180) / Math.PI;
   }
   let phase = 0;
+  /* mars-gravity hop — vy/jumpOff persist across frames (g = 3.71 m/s²) */
+  let jumpVy = 0;
+  let jumpOff = 0;
+  let grounded = true;
+  /* manual momentum — a suited crew doesn't snap to speed or stop dead */
+  let manCur = 0; // smoothed speed (m/s)
+  let manDx = 0, manDz = 0; // last movement direction (kept while coasting)
+  let manPrev = 0, manAccel = 0; // for the rover's suspension dip
+  let lastR: unknown = null; // last auto-traverse readout (for dead-reckoning)
+  let lastRT = 0;
   let slowFrames = 0;
   let downscaled = false;
   let trimmed = false;
   let dustFade = 1;
+  let fogDenLerp = fogDen; /* eases up when a dust-storm drill darkens the sky */
 
   const sunDir = new THREE.Vector3(0, 1, 0);
   let raf = 0;
@@ -1133,6 +1405,9 @@ export async function createFpvScene(canvas: HTMLCanvasElement, opts?: FpvSceneO
       useStore.getState().setWalkManual(true); // WalkEngine pauses the auto-traverse
     }
     const manual = st.walk.active && st.walk.manual && !atEnd;
+    /* utility rover — ~10 km/h between sites, gentler slope penalty, no dash;
+     * at battery ≤ 4% it limps at foot pace */
+    const roverOn = st.walk.vehicle === "rover" && camBus.roverBattery > 4;
     let manualSpeed = 0;
     if (manual) {
       /* local terrain gradient → uphill/downhill speed factor */
@@ -1141,26 +1416,46 @@ export async function createFpvScene(canvas: HTMLCanvasElement, opts?: FpvSceneO
       const gz = (groundH(pos.x, pos.z + e2) - groundH(pos.x, pos.z - e2)) / (2 * e2);
       const grad = Math.hypot(gx, gz);
       const slopeNow = (Math.atan(grad) / Math.PI) * 180;
-      const dashOn = (pressed.has("ShiftLeft") || pressed.has("ShiftRight") || walkInput.dash) && inputMove;
+      const dashOn = !roverOn && (pressed.has("ShiftLeft") || pressed.has("ShiftRight") || walkInput.dash) && inputMove;
+      let target = 0;
       if (inputMove) {
         const yawR = yaw * RAD;
-        let dx = Math.sin(yawR) * iF + Math.cos(yawR) * iS;
-        let dz = -Math.cos(yawR) * iF + Math.sin(yawR) * iS;
+        /* sidesteps are shorter than strides — a suited astronaut shuffles sideways */
+        let dx = Math.sin(yawR) * iF + Math.cos(yawR) * iS * 0.72;
+        let dz = -Math.cos(yawR) * iF + Math.sin(yawR) * iS * 0.72;
         const dl = Math.hypot(dx, dz) || 1;
         dx /= dl; dz /= dl;
+        manDx = dx; manDz = dz;
         const upDot = grad > 1e-4 ? Math.max(-1, Math.min(1, (dx * gx + dz * gz) / grad)) : 0;
         const slopeEff = slopeNow * upDot; // + uphill · − downhill
-        const spd = Math.max(0.35, Math.min(3.4, slopeAdjustedSpeed(dashOn ? 11.4 : 4.9, slopeEff) / 3.6));
-        manualSpeed = spd;
-        pos.x = Math.max(-halfW + 60, Math.min(halfW - 60, pos.x + dx * spd * dt));
-        pos.z = Math.max(-halfW + 60, Math.min(halfW - 60, pos.z + dz * spd * dt));
+        /* suited EVA pace: ~3.4 km/h careful walk, ~5.6 km/h brief suit lope on
+         * the dash — Apollo crews averaged 2.2–3.6 km/h; sprinting in a
+         * pressurized suit is not survivable physics. The rover covers the
+         * long site-to-site legs at ~10 km/h (Apollo LRV class). */
+        target = Math.max(0.25, Math.min(roverOn ? 3.1 : 1.7, slopeAdjustedSpeed(roverOn ? 10 : dashOn ? 5.6 : 3.4, slopeEff * (roverOn ? 0.55 : 1)) / 3.6));
       }
+      /* momentum — in 0.38 g nothing snaps: the suit builds to pace over about
+       * a stride and coasts to a stop; the rover is heavier still (slow
+       * spool-up, gentle regen braking). This is what was missing — without
+       * it every tap read like a dying battery. */
+      const accel = target > manCur ? (roverOn ? 3.2 : 6.5) : (roverOn ? 5.5 : 8.5);
+      manCur += (target - manCur) * Math.min(1, dt * accel);
+      if (manCur < 0.02) manCur = 0;
+      manAccel += ((manCur - manPrev) / Math.max(dt, 1e-3) - manAccel) * Math.min(1, dt * 6);
+      manPrev = manCur;
+      if (manCur > 0 && (manDx !== 0 || manDz !== 0)) {
+        pos.x = Math.max(-halfW + 60, Math.min(halfW - 60, pos.x + manDx * manCur * dt));
+        pos.z = Math.max(-halfW + 60, Math.min(halfW - 60, pos.z + manDz * manCur * dt));
+      }
+      manualSpeed = manCur;
       camBus.manual = true;
       camBus.speedMs = manualSpeed;
-      camBus.dashing = dashOn;
+      camBus.dashing = dashOn && manCur > 1.0;
       camBus.offRouteM = distToRoute(pos.x, pos.z);
       camBus.slopeDeg = slopeNow;
     } else {
+      manCur = 0;
+      manPrev = 0;
       camBus.manual = false;
       camBus.speedMs = 0;
       camBus.dashing = false;
@@ -1168,23 +1463,46 @@ export async function createFpvScene(canvas: HTMLCanvasElement, opts?: FpvSceneO
       camBus.slopeDeg = 0;
     }
 
-    /* position target (auto-walk eases toward the sim readout) */
+    /* position target (auto-walk eases toward the sim readout).
+     * No easing while paused — the astronaut stands where they are, so a
+     * structure visit (which pauses the walk) doesn't drag them off the door. */
     let tLon: number, tLat: number, lst: number;
     if (r) { tLon = r.lon; tLat = r.lat; lst = r.lstNow; }
     else {
       const a = routeNow[0] ?? { lon: SITE.lon, lat: SITE.lat };
       tLon = a.lon; tLat = a.lat; lst = st.eva.startLst;
     }
-    if (!manual) {
-      const kPos = Math.min(1, dt * 3.2);
-      pos.x += (toX(tLon) - pos.x) * kPos;
-      pos.z += (toZ(tLat) - pos.z) * kPos;
+    if (r && r !== lastR) { lastR = r; lastRT = tGlobal; }
+    if (!manual && st.walk.playing) {
+      /* dead-reckon between readout emits (~3.5 Hz): extrapolate the target
+       * along the sim's speed/bearing so the eased avatar doesn't surge and
+       * stall with every emit — that pulse was the "low battery" shuffle */
+      const paused = dwelling || atEnd;
+      const v = paused ? 0 : r?.speedEff ?? 0;
+      const brgR = (r?.bearing ?? 0) * RAD;
+      const age = Math.min(2, Math.max(0, tGlobal - lastRT));
+      const tx = toX(tLon) + Math.sin(brgR) * v * age;
+      const tz = toZ(tLat) - Math.cos(brgR) * v * age;
+      const kPos = Math.min(1, dt * 4.5);
+      pos.x += (tx - pos.x) * kPos;
+      pos.z += (tz - pos.z) * kPos;
     }
 
     /* heading */
     let yawT: number;
     if (manual) yawT = yaw; // free look — heading is user-driven on foot
-    else if (r && !atEnd) yawT = r.bearing;
+    else if (r && !atEnd) {
+      /* while standing AT a waypoint (science stop) r.bearing degenerates to
+       * atan2(0,0)=0 — settle on the leg LEAVING this waypoint instead, which
+       * is where the route (and the site station) actually goes */
+      const ni = r.nextIdx;
+      const a = route[ni];
+      const b = route[Math.min(ni + 1, route.length - 1)];
+      const legBrg = a && b && (a.lon !== b.lon || a.lat !== b.lat)
+        ? (Math.atan2(toX(b.lon) - toX(a.lon), -(toZ(b.lat) - toZ(a.lat))) * 180) / Math.PI
+        : r.bearing;
+      yawT = r.nextDistM > 12 ? r.bearing : legBrg;
+    }
     else if (r) yawT = yaw;
     else {
       const a = routeNow[0], b = routeNow[1];
@@ -1208,15 +1526,55 @@ export async function createFpvScene(canvas: HTMLCanvasElement, opts?: FpvSceneO
     const yawSpeed = r ? 2.4 : 1.5;
     yaw = approachAngle(yaw, yawT + lookS, Math.min(1, dt * yawSpeed));
 
-    /* gait */
-    const speed = manual ? manualSpeed : (r?.speedEff ?? 0);
-    if (moving) phase += dt * 2 * Math.PI * Math.min(2.6, Math.max(0.8, speed / 1.3));
-    const bob = moving ? Math.sin(phase) * 0.045 : Math.sin(tGlobal * 1.2) * 0.012;
-    const roll = moving ? Math.sin(phase * 0.5) * 0.011 : 0;
+    /* gait — Mars 0.38 g reads as a floaty, bouncy stride: bounce grows with
+     * pace (a suited lope spends more time airborne than an Earth walk), the
+     * stride lengthens at speed; the rover stays damped but leans into turns
+     * and dips on throttle like real suspension */
+    const speed = manual ? manCur : (r?.speedEff ?? 0);
+    if (moving) phase += dt * 2 * Math.PI * Math.min(2.8, Math.max(0.75, speed / (roverOn ? 2.4 : 1.15)));
+    const bobAmp = roverOn ? 0.014 : 0.034 + 0.026 * Math.min(1, speed / 1.6);
+    const bob = moving ? Math.sin(phase) * bobAmp : Math.sin(tGlobal * 1.2) * 0.012;
+    const roll = moving ? Math.sin(phase * 0.5) * (roverOn ? 0.005 : 0.012) + (roverOn ? -iS * 0.02 : 0) : 0;
+
+    /* mars-gravity hop — SPACE / D-pad JUMP (foot mode only; rover stays planted) */
+    if (walkInput.jump) {
+      if (grounded && manual && !roverOn) {
+        jumpVy = 2.4; // ~0.78 m apex, ~1.3 s air time at 0.39 g
+        grounded = false;
+      }
+      walkInput.jump = false;
+    }
+    if (!grounded) {
+      jumpVy -= 3.71 * dt;
+      jumpOff += jumpVy * dt;
+      if (jumpOff <= 0) {
+        jumpOff = 0;
+        jumpVy = 0;
+        grounded = true;
+      }
+    }
+
+    /* structure proximity — nearest enterable hab/cache (hab is a big complex:
+     * docking range 18 m; caches are service points at 9 m) */
+    {
+      let nd = Infinity;
+      let near: StructureNode | null = null;
+      for (const n of structureNodesLive) {
+        const d = Math.hypot(n.x - pos.x, n.z - pos.z);
+        if (d < nd) {
+          nd = d;
+          near = n;
+        }
+      }
+      const R = near?.type === "hab" ? 18 : 9;
+      camBus.nearStructure = near && nd <= R ? near : null;
+    }
 
     const ground = groundH(pos.x, pos.z);
-    const eye = ground + 1.72 + bob;
-    const pitchDeg = (moving ? -5 + Math.sin(phase * 2) * 0.35 : -4) + pitchS;
+    const eye = ground + (roverOn ? 1.98 : 1.72) + bob + jumpOff;
+    const pitchDeg = (moving ? -5 + Math.sin(phase * 2) * 0.4 : -4) + pitchS
+      + (manual && !roverOn && manCur > 0.2 ? Math.min(1, manCur / 1.6) * 1.6 : 0) // lean into the stride
+      + (roverOn ? manAccel * 0.35 : 0); // nose up on throttle, dips on regen braking
 
     camera.position.set(pos.x, eye, pos.z);
     camera.rotation.order = "YXZ";
@@ -1253,6 +1611,14 @@ export async function createFpvScene(canvas: HTMLCanvasElement, opts?: FpvSceneO
     skyUniforms.uDay.value = day;
     sky.position.set(camera.position.x, 0, camera.position.z);
     fogColor.setRGB(0.93 * day, 0.70 * day, 0.47 * day);
+    if (day < 0.45) fogColor.lerp(new THREE.Color(0.32, 0.22, 0.15), (0.45 - day) * 1.6);
+    (scene.fog as THREE.FogExp2).color.copy(fogColor);
+    /* dust-storm drill: sky closes in, fog thickens, airborne dust doubles */
+    const dustStorm = st.hazard?.id === "dust_storm";
+    fogDenLerp += ((dustStorm ? 0.00058 : fogDen) - fogDenLerp) * Math.min(1, dt * 0.7);
+    (scene.fog as THREE.FogExp2).density = fogDenLerp;
+    terrainUniforms.uFogDen.value = fogDenLerp;
+    if (dustStorm) fogColor.lerp(new THREE.Color(0.52, 0.34, 0.19), 0.35);
     (scene.fog as THREE.FogExp2).color.copy(fogColor);
     terrainUniforms.uSunDir.value.copy(sunDir);
     terrainUniforms.uDay.value = day;
@@ -1276,7 +1642,12 @@ export async function createFpvScene(canvas: HTMLCanvasElement, opts?: FpvSceneO
         if (ry > 16) arr[ix + 1] -= 15; else if (ry < -2) arr[ix + 1] += 15;
       }
       dustGeo.attributes.position.needsUpdate = true;
-      dustUniforms.uOpacity.value = (0.16 + 0.2 * day) * dustFade;
+      dustUniforms.uOpacity.value = (0.16 + 0.2 * day) * dustFade * (dustStorm ? 2.4 : 1);
+    }
+
+    /* habitat / pad / cache beacons blink */
+    for (const b of blinkers) {
+      b.mat.opacity = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(tGlobal * 2.4 + b.phase));
     }
 
     /* beacons: pulse + next highlight + labels + route state */

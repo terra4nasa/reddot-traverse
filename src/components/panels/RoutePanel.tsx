@@ -29,7 +29,7 @@ export function RoutePanel() {
   }));
 
   return (
-    <PanelFrame id="route" title="TRAVERSE ROUTE" subtitle="eva planner · on-board solve — instant">
+    <PanelFrame id="route" title="MARSWALK ROUTE" subtitle="eva planner · on-board solve — instant">
       <div className="space-y-4">
         {/* quick actions */}
         <section className="rounded-sm border border-[rgba(255,122,47,0.35)] bg-[rgba(255,122,47,0.05)] p-3">
@@ -44,7 +44,7 @@ export function RoutePanel() {
               <span className="text-[9px]">return to base</span>
             </button>
           </div>
-          <button className="hud-btn active mt-2 w-full !py-2.5" disabled={route.length < 2} onClick={() => startWalk()} title="Walk the route in the helmet visor with live telemetry">
+          <button className="hud-btn active mt-2 w-full !py-2.5" disabled={route.length < 2} onClick={() => startWalk()} title="Traverse the route in the helmet visor with live telemetry">
             <Footprints className="h-4 w-4" /> walk this route (visor)
           </button>
           <p className="mt-2 text-[9px] leading-relaxed text-[var(--hud-dim)]">
@@ -68,7 +68,7 @@ export function RoutePanel() {
                 <span className="hud-label">base walk speed (suited)</span>
                 <span className="text-[var(--hud-cyan)]">{eva.speedKmh.toFixed(1)} km/h</span>
               </div>
-              <Slider value={[eva.speedKmh]} min={1.5} max={4} step={0.1} onValueChange={(v) => setEva({ speedKmh: v[0] })} aria-label="Walk speed" />
+              <Slider value={[eva.speedKmh]} min={1.5} max={4} step={0.1} onValueChange={(v) => setEva({ speedKmh: v[0] })} aria-label="Suited pace" />
               <p className="mt-1 text-[10px] leading-tight text-[var(--hud-dim)]">avg human walking pace ≈ 4.8 km/h · suited EVA 1.5–4.0 (default 2.6)</p>
             </div>
             <div>
@@ -123,7 +123,7 @@ export function RoutePanel() {
         {plan.ok && (
           <div className="flex items-center gap-2 rounded-sm border border-[rgba(74,222,128,0.4)] bg-[rgba(74,222,128,0.07)] p-2 text-[11px] text-[var(--hud-green)]">
             <CircleCheck className="h-4 w-4 shrink-0" />
-            <span>EVA plan within safety margins — GO for Traverse.</span>
+            <span>EVA plan within safety margins — GO for Marswalk.</span>
           </div>
         )}
 

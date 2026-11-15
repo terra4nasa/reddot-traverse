@@ -1,4 +1,4 @@
-/* Red Dot Traverse 13-feature regression probe — desktop (mouse) + iPad (touch).
+/* ARES-VIS 13-feature regression probe — desktop (mouse) + iPad (touch).
  * Covers: relocation (gazetteer/name/coords + validation), comms send/receive,
  * bottom dock, control cluster, view switch, beacon/location naming, map grid,
  * O2 low/critical banners, D-pad walk on touch. */
@@ -49,7 +49,7 @@ async function main() {
   out.locationsPanel = await page.locator('aside[aria-label="LOCATION CONTROL"]').count();
   await page.locator('button:has-text("Jezero Crater")').first().click();
   await sleep(2200);
-  const st1 = await page.evaluate(() => window.__RDT_STORE__ && { site: window.__RDT_STORE__.getState().site.name, route: window.__RDT_STORE__.getState().route.length });
+  const st1 = await page.evaluate(() => window.__ARES_STORE__ && { site: window.__ARES_STORE__.getState().site.name, route: window.__ARES_STORE__.getState().route.length });
   out.jezeroRelocate = st1;
   await page.screenshot({ path: `${SHOTS}/ft-02-jezero.png` });
 
@@ -58,7 +58,7 @@ async function main() {
   await page.fill('input[aria-label="Longitude"]', "-48.0 W");
   await page.locator('button:has-text("set")').click();
   await sleep(2000);
-  const st2 = await page.evaluate(() => window.__RDT_STORE__ && window.__RDT_STORE__.getState().site.name);
+  const st2 = await page.evaluate(() => window.__ARES_STORE__ && window.__ARES_STORE__.getState().site.name);
   out.coordsRelocate = st2; // expect Chryse Planitia (Viking 1) · … km
 
   /* invalid latitude must show an inline error */
@@ -72,7 +72,7 @@ async function main() {
   await page.fill('input[aria-label="Site name"]', "olympus");
   await page.locator('aside[aria-label="LOCATION CONTROL"] button:has-text("go")').click();
   await sleep(2200);
-  const st3 = await page.evaluate(() => window.__RDT_STORE__ && window.__RDT_STORE__.getState().site.name);
+  const st3 = await page.evaluate(() => window.__ARES_STORE__ && window.__ARES_STORE__.getState().site.name);
   out.nameRelocate = st3; // expect Olympus Mons
   await page.screenshot({ path: `${SHOTS}/ft-03-olympus.png` });
 
@@ -82,8 +82,8 @@ async function main() {
   out.standbyLocation = await page.locator("text=/Olympus Mons/").first().isVisible().catch(() => false);
   await page.screenshot({ path: `${SHOTS}/ft-04-standby.png` });
 
-  /* ---- begin traverse → dock ---- */
-  await page.locator('button:has-text("begin traverse")').click();
+  /* ---- begin marswalk → dock ---- */
+  await page.locator('button:has-text("begin marswalk")').click();
   await sleep(5000);
   out.dockCards = await page.evaluate(() => ({
     location: Array.from(document.querySelectorAll(".hud-panel")).some((p) => /location · live beacon/i.test(p.textContent || "")),
@@ -102,14 +102,14 @@ async function main() {
   out.commsSent = await page.locator("text=/status report please/").first().isVisible().catch(() => false);
   await sleep(4500);
   out.commsReply = await page.evaluate(() => {
-    const s = window.__RDT_STORE__.getState();
+    const s = window.__ARES_STORE__.getState();
     return { n: s.comms.messages.length, mission: s.comms.messages.some((m) => m.from === "mission"), signal: s.comms.signal, status: s.comms.status };
   });
   await page.screenshot({ path: `${SHOTS}/ft-06-comms.png` });
 
   /* ---- F13: O2 warnings — fresh walk + fast-burn suit ---- */
   await page.evaluate(() => {
-    const s = window.__RDT_STORE__.getState();
+    const s = window.__ARES_STORE__.getState();
     s.stopWalk();
     s.startWalk();
     s.setEva({ suitHours: 0.2 });
@@ -121,7 +121,7 @@ async function main() {
     out.o2Low = await page.locator("text=/O₂ LOW/").first().isVisible().catch(() => false);
   }
   out.o2StateMid = await page.evaluate(() => {
-    const s = window.__RDT_STORE__.getState();
+    const s = window.__ARES_STORE__.getState();
     return { o2: s.walk.readout?.o2Pct, mult: s.walk.speedMult, suit: s.eva.suitHours, fps: Math.round((window.__FPV_CAMBUS__?.fps ?? 0) * 10) / 10 };
   });
   await page.screenshot({ path: `${SHOTS}/ft-07-o2-low.png` });
@@ -136,7 +136,7 @@ async function main() {
   await page.locator('button[title*="Switch to Map View"]').first().click();
   await sleep(2000);
   const st4 = await page.evaluate(() => {
-    const s = window.__RDT_STORE__.getState();
+    const s = window.__ARES_STORE__.getState();
     return { visor: s.visorMode, walkActive: s.walk.active, site: s.site.name, o2: s.walk.readout?.o2Pct };
   });
   out.mapReturn = st4;
@@ -146,7 +146,7 @@ async function main() {
   /* back to visor — walk resumes where it was */
   await page.locator('button:has-text("visor view")').click();
   await sleep(2500);
-  out.walkResumed = await page.locator('button:has-text("begin traverse")').count(); // should be 0 → walk HUD shown
+  out.walkResumed = await page.locator('button:has-text("begin marswalk")').count(); // should be 0 → walk HUD shown
 
   await ctx.close();
 
@@ -162,7 +162,7 @@ async function main() {
   await sleep(2000);
   await tpage.tap('button:has-text("visor view")');
   await sleep(3000);
-  await tpage.tap('button:has-text("begin traverse")');
+  await tpage.tap('button:has-text("begin marswalk")');
   await sleep(4500);
   /* touch-HOLD the forward pad for ~1.4 s via CDP */
   const pad = await tpage.locator('button[aria-label="Walk forward (W)"]').boundingBox();

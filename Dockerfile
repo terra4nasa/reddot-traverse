@@ -1,6 +1,6 @@
-# Red Dot Traverse — Elysium Traverse Planner
-# Build : docker build -t reddot-traverse .
-# Run   : docker run -d -p 3000:3000 --name reddot-traverse reddot-traverse
+# ARES-VIS — Elysium Marswalk Planner
+# Build : docker build -t ares-vis .
+# Run   : docker run -d -p 3000:3000 --name ares-vis ares-vis
 
 # ---- deps ----
 FROM oven/bun:1.2 AS deps

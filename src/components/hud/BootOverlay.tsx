@@ -27,13 +27,13 @@ export function BootOverlay() {
         <div className="mb-6 flex items-center gap-3">
           <Orbit className="h-10 w-10 text-[var(--hud-orange)] hud-glow" />
           <div>
-            <h1 className="font-display text-2xl font-bold tracking-[0.28em] text-[var(--hud-amber)] hud-glow">RED DOT TRAVERSE</h1>
-            <p className="hud-label">interplanetary survival guide · martian map · nasa space apps 2026</p>
+            <h1 className="font-display text-2xl font-bold tracking-[0.2em] text-[var(--hud-amber)] hud-glow">REDDOT MARSWALK</h1>
+            <p className="hud-label">singapore's little red dot on the red planet · nasa space apps 2026</p>
           </div>
         </div>
         <p className="mb-6 text-sm leading-relaxed text-[var(--hud-text)]">
           The first astronauts on Mars will want the best map possible. This visor display fuses decades of robotic
-          Mars-mission data into one hyper-local planning tool for a Traverse across <b className="text-[var(--hud-amber)]">Elysium
+          Mars-mission data into one hyper-local planning tool for a Marswalk across <b className="text-[var(--hud-amber)]">Elysium
           Planitia</b> — the plains where InSight listened to Mars quake for four years.
         </p>
         <ul className="mb-8 space-y-2.5">
@@ -51,7 +51,7 @@ export function BootOverlay() {
           ▸ enter visor display
         </button>
         <p className="mt-3 text-center text-[10px] text-[var(--hud-dim)]">
-          Preloaded: TRAVERSE-01 science route from Homestead Hollow. Live tiles stream from USGS Astrogeology.
+          Preloaded: MARSWALK-01 science route from Homestead Hollow. Live tiles stream from USGS Astrogeology.
         </p>
       </div>
     </motion.div>

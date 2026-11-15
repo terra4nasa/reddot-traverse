@@ -1,16 +1,18 @@
-# Red Dot Traverse — Elysium Traverse Planner
+# RedDot Marswalk — Elysium Traverse Planner
+
+*(formerly ARES-VIS)*
 
 **NASA Space Apps 2026 · Interplanetary Survival Guide: Martian Map**
 
 **🔴 Live app:** **[https://reddot-traverse.vercel.app](https://reddot-traverse.vercel.app/)**
 — full 2D planner + 3D visor + NASA live data (APOD, EPIC, NEO watch, space weather).
 
-Red Dot Traverse fuses decades of robotic Mars-mission data into one hyper-local planning
-tool for a Traverse across **Elysium Planitia** — the plains where NASA's InSight
+RedDot Marswalk — named for Singapore's "Little Red Dot" on the Red Planet — fuses decades of robotic Mars-mission data into one hyper-local planning
+tool for a Marswalk across **Elysium Planitia** — the plains where NASA's InSight
 lander listened to Mars quakes for four years. Plan the EVA on a 2D orbital map,
-then step into a first-person **3D helmet visor** and physically walk the route.
+then step into a first-person **3D helmet visor** and physically traverse the route.
 
-> **Red Dot** = Singapore, the Little Red Dot on the world map · **Traverse** = the surface route we plan and walk
+> **ARES** = the Greek counterpart of Mars · **VIS** = the helmet **VIS**or
 
 ## Features
 
@@ -22,11 +24,49 @@ then step into a first-person **3D helmet visor** and physically walk the route.
   radiation dose accumulation and GO / NO-GO verdicts
 - **First-person 3D visor (Three.js/WebGL)** — HRSC-MOLA hybrid DEM terrain
   (200 m/px), procedural crater field, ~15 k instanced rocks, distant highland
-  ring, drifting dust, PCF **sun shadows** from the true LST sun position, and a
-  detailed **InSight lander** model
+  ring, drifting dust, PCF **sun shadows** from the true LST sun position, a
+  detailed **InSight lander** model and a **habitat complex** (pressurized dome,
+  crew modules, airlock, solar wings, comms mast, landing pad) at the base, plus
+  an **instrument cache** at every science site
+- **Hazard drill simulator** — trigger a dust storm, solar particle event, O₂
+  leak, suit tear, comms blackout or marsquake: Mission Control pops a critical
+  alert, ranks every shelter (BASE waypoints + lander fallback) by walk time
+  adjusted for shielding, and directs you to the best one while the suit models
+  respond (O₂ burn ×3 on a leak, dose ×8 during an SEP, fog closing in on a
+  storm) and the compass/minimap show a dedicated shelter bearing bug
+- **Biometrics & radiation visor panels** — heart rate, core temp, suit pressure
+  and work-rate MET live beside a real-time dose rate (µSv/h) driven by the
+  live space-weather feed; configurable per-block in visor prefs
+- **Live Mars weather panel** — real REMS telemetry from MSL Curiosity at
+  Gale Crater (MAAS2 mirror, no key): sol, high/low air temp, pressure,
+  sky opacity, season, sunrise/sunset; cached server-side 30 min and degrades
+  to an honest STALE badge if the mirror blips, so the panel never lies
+- **Floating HUD panel workspace** — every visor panel (control cluster,
+  navigation, EVA, biometrics, terrain, radiation, location, comms, mini-map)
+  is a movable window: drag by its title bar (viewport edges snap), resize
+  from the corner, collapse to the header, close it, and re-add / re-stack /
+  reset from the panel library; the layout persists with your mission file.
+  Frames are cut to the panel's role — chamfered octagons for telemetry, a
+  console silhouette for the control cluster, wedges for linear readouts —
+  not plain rectangles
+- **Enterable structures with per-site capabilities** — every waypoint gets a
+  real building placed in your arrival view: a pressurized hab complex at
+  base (airlock + dome: O₂ resupply from the LOX bank, rover dock + charge,
+  storm shelter that rides out any active drill), then a **field lab**
+  (tool service, rover charge), an **instrument cache** (tool / drill
+  service, spare O₂ candle) and a **comms relay** (rover charge, O₂ candle)
+  cycling across the science stops; walk within range and press **[E]** to
+  get inside. Works on every site — default or relocated — and the science
+  stop card moves to the left edge so arrival prompts stack cleanly center
 - **Dash-to-walk manual control** — hands-free auto-traverse *or* take the foot
-  controls: `WASD` / arrow keys / on-screen D-pad, **SHIFT to dash**, drag to
-  look around; speed reacts to the local terrain gradient
+  controls: `WASD` / arrow keys / on-screen D-pad, **SHIFT to dash**,
+  **SPACE to jump** (mars-gravity hop), drag to look around; suited speed
+  stays realistic (~3.4 km/h walk, ~5.6 km/h lope) and reacts to the local
+  terrain gradient
+- **Utility rover for the long legs** — toggle **[V]** (or the control button)
+  to ride at ~10 km/h between sites instead of suiting up for a 30-minute
+  hike; the battery drains ~1.6 %/km and recharges at the hab dock, and a
+  hint chip suggests the rover whenever the next leg is long
 - **3D sample collection** — 12 beaconed science targets along the traverse;
   aim within ~26° of the reticle inside 7 m and press **[E]** (or the HUD button)
   to secure the rock into the sample tray
@@ -89,19 +129,19 @@ Keep it alive with **pm2**:
 
 ```bash
 npm i -g pm2
-pm2 start npm --name reddot-traverse -- run start:node
+pm2 start npm --name ares-vis -- run start:node
 pm2 save && pm2 startup    # auto-start on boot
 ```
 
-…or a **systemd** unit (`/etc/systemd/system/reddot-traverse.service`):
+…or a **systemd** unit (`/etc/systemd/system/ares-vis.service`):
 
 ```ini
 [Unit]
-Description=Red Dot Traverse Planner
+Description=RedDot Marswalk (Elysium Traverse Planner)
 After=network.target
 
 [Service]
-WorkingDirectory=/opt/reddot-traverse
+WorkingDirectory=/opt/ares-vis
 ExecStart=/usr/bin/node .next/standalone/server.js
 Environment=NODE_ENV=production PORT=3000
 Restart=on-failure
@@ -112,10 +152,10 @@ WantedBy=multi-user.target
 ```
 
 ```bash
-sudo systemctl enable --now reddot-traverse
+sudo systemctl enable --now ares-vis
 ```
 
-**Nginx reverse proxy** with TLS (`/etc/nginx/sites-available/reddot-traverse`):
+**Nginx reverse proxy** with TLS (`/etc/nginx/sites-available/ares-vis`):
 
 ```nginx
 server {
@@ -145,16 +185,16 @@ lean `node:22-alpine` runtime, ~180 MB image).
 
 ```bash
 # plain Docker
-docker build -t reddot-traverse .
-docker run -d -p 3000:3000 --name reddot-traverse reddot-traverse
+docker build -t ares-vis .
+docker run -d -p 3000:3000 --name ares-vis ares-vis
 
 # or Docker Compose
 docker compose up -d --build
 ```
 
-App: http://localhost:3000 · logs: `docker logs -f reddot-traverse`
+App: http://localhost:3000 · logs: `docker logs -f ares-vis`
 Health check is built into the compose file. To change the port:
-`docker run -p 8080:3000 reddot-traverse`.
+`docker run -p 8080:3000 ares-vis`.
 
 ## 3 · Cloud hosts
 
@@ -178,14 +218,16 @@ GitHub Pages only serves static files, so the deploy uses Next's
 **One-time setup:** repo **Settings → Pages → Build and deployment → Source:
 "GitHub Actions"**.
 
-The included workflow (`.github/workflows/github-pages.yml`) then builds and
-publishes on every push to `main`:
+The workflow that built and published on every push to `main` was removed in the
+rebrand cleanup; the mirror at the URL below was published from that pipeline and
+stays frozen until you re-add a workflow (`.github/workflows/github-pages.yml`)
+or publish a manual export:
 
 - site URL: `https://terra4nasa.github.io/reddot-traverse/`
-- `NEXT_BASE_PATH=/reddot-traverse` is applied automatically so all assets resolve
+- `NEXT_BASE_PATH=/reddot-traverse` matches the repo path so all assets resolve
 
 **What works on Pages** — the full 2D planner, all map layers, the 3D visor,
-manual walking, sample collection and brief export (all client-rendered).
+traverse mode, sample collection and brief export (all client-rendered).
 **Limitation** — there is no server, so `/api/spaceweather` does not exist; the
 app automatically falls back to fetching NOAA SWPC directly from the browser
 (CORS-enabled endpoints), and to bundled default values if that fails too.

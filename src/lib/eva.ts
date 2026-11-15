@@ -1,4 +1,4 @@
-// EVA planning math for Red Dot Traverse
+// EVA planning math for ARES-VIS
 import { haversineKm, slopeAdjustedSpeed, sunElevationDeg } from "./mars";
 import type { EvaParams, RouteWaypoint } from "./store";
 import type { Sample } from "./terrain";

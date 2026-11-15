@@ -29,7 +29,7 @@ export function SciencePanel() {
   const geoOn = layers.find((l) => l.def.id === "geology")?.visible;
 
   return (
-    <PanelFrame id="science" title="SCIENCE TARGETS" subtitle="traverse-01 · new science along the way">
+    <PanelFrame id="science" title="SCIENCE TARGETS" subtitle="marswalk-01 · new science along the way">
       <div className="space-y-3">
         <p className="text-[11px] leading-relaxed text-[var(--hud-dim)]">
           Targets selected around the InSight landing site (Elysium Planitia). Terrain values are sampled from the

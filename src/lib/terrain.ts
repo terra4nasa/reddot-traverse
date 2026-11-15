@@ -24,7 +24,7 @@ let pending: Promise<TerrainData> | null = null;
 export async function loadTerrain(): Promise<TerrainData> {
   if (cache) return cache;
   if (!pending) {
-    /* Relative URL: resolves under the deployed base path (GitHub Pages /reddot-traverse/, Vercel /, dev /) */
+    /* Relative URL: resolves under the deployed base path (GitHub Pages /ARES-VIS/, Vercel /, dev /) */
     pending = fetch("assets/data/terrain.json")
       .then((r) => {
         if (!r.ok) throw new Error(`terrain.json HTTP ${r.status}`);
