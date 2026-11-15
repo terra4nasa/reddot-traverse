@@ -82,8 +82,8 @@ async function main() {
   out.standbyLocation = await page.locator("text=/Olympus Mons/").first().isVisible().catch(() => false);
   await page.screenshot({ path: `${SHOTS}/ft-04-standby.png` });
 
-  /* ---- begin marswalk → dock ---- */
-  await page.locator('button:has-text("begin marswalk")').click();
+  /* ---- begin traverse → dock ---- */
+  await page.locator('button:has-text("begin traverse")').click();
   await sleep(5000);
   out.dockCards = await page.evaluate(() => ({
     location: Array.from(document.querySelectorAll(".hud-panel")).some((p) => /location · live beacon/i.test(p.textContent || "")),
@@ -106,6 +106,10 @@ async function main() {
     return { n: s.comms.messages.length, mission: s.comms.messages.some((m) => m.from === "mission"), signal: s.comms.signal, status: s.comms.status };
   });
   await page.screenshot({ path: `${SHOTS}/ft-06-comms.png` });
+  /* close the comms console — left open it overlays the control panel's
+     lower buttons (z-530) and intercepts the map-view switch click below */
+  await page.locator('button[aria-label="Close comms panel"]').click();
+  await sleep(500);
 
   /* ---- F13: O2 warnings — fresh walk + fast-burn suit ---- */
   await page.evaluate(() => {
@@ -146,7 +150,7 @@ async function main() {
   /* back to visor — walk resumes where it was */
   await page.locator('button:has-text("visor view")').click();
   await sleep(2500);
-  out.walkResumed = await page.locator('button:has-text("begin marswalk")').count(); // should be 0 → walk HUD shown
+  out.walkResumed = await page.locator('button:has-text("begin traverse")').count(); // should be 0 → walk HUD shown
 
   await ctx.close();
 
@@ -162,10 +166,10 @@ async function main() {
   await sleep(2000);
   await tpage.tap('button:has-text("visor view")');
   await sleep(3000);
-  await tpage.tap('button:has-text("begin marswalk")');
+  await tpage.tap('button:has-text("begin traverse")');
   await sleep(4500);
   /* touch-HOLD the forward pad for ~1.4 s via CDP */
-  const pad = await tpage.locator('button[aria-label="Walk forward (W)"]').boundingBox();
+  const pad = await tpage.locator('button[aria-label="Traverse forward (W)"]').boundingBox();
   if (pad) {
     const px = pad.x + pad.width / 2, py = pad.y + pad.height / 2;
     await tcdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: px, y: py, id: 1 }] });
@@ -176,8 +180,8 @@ async function main() {
   }
   await tpage.screenshot({ path: `${SHOTS}/ft-10-ipad-dock.png` });
   /* D-pad must sit fully above the dock; control cluster must be on-screen */
-  const padBottom = await tpage.locator('button[aria-label="Walk backward (S)"]').boundingBox();
-  const ctrlBtn = await tpage.locator('button[title="End walk — exit visor"]').first().boundingBox();
+  const padBottom = await tpage.locator('button[aria-label="Traverse backward (S)"]').boundingBox();
+  const ctrlBtn = await tpage.locator('button[title="End traverse — exit visor"]').first().boundingBox();
   out.ipadLayout = padBottom && ctrlBtn ? { padBottomY: Math.round(padBottom.y + padBottom.height), dockTopY: Math.round(ctrlBtn.y), clear: padBottom.y + padBottom.height <= ctrlBtn.y, ctrlOnScreen: ctrlBtn.x >= 0 && ctrlBtn.x + ctrlBtn.width <= 834 } : null;
   await tctx.close();
 
