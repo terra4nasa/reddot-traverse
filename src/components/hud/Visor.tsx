@@ -1744,7 +1744,7 @@ function StandbyHud({ prefs, onPrefs }: { prefs: VisorPrefs; onPrefs: () => void
             <div className="hud-label mt-0.5">{fmtLonLat(site.lon, site.lat)} · {site.region}</div>
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-[var(--hud-text)]">
-            Real-time 3D surface view — DEM terrain, craters, rocks, sun shadows and the lander rendered from real mission data. Traverse hands-free along the route or take manual foot control (WASD / on-screen pad, SHIFT to dash), look around freely and grab rock samples in 3D with [E]. Live range, bearing, O₂ and dose telemetry sit in the dock below.
+            Real-time 3D surface view — DEM terrain, craters, rocks, sun shadows and the lander rendered from real mission data. Traverse hands-free along the route or take manual foot control (WASD / on-screen pad, SHIFT to dash), look around freely and grab rock samples in 3D with [E]. Live range, bearing, O₂ and dose telemetry sit in the floating HUD panels once the traverse begins.
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-1.5">
             {blocksOn.length > 0 ? blocksOn.map((b) => <span key={b} className="hud-chip !text-[var(--hud-cyan)]">{b}</span>) : <span className="hud-chip">all blocks off — open prefs</span>}

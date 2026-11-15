@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Build the static GitHub Pages export (out/) for ARES-VIS.
-# Dynamic route handlers (/api/spaceweather, /api/nasa) must be prerenderable:
-# swap force-dynamic → force-static so `next build` executes each once at
-# build time and bakes a snapshot; the client-side code keeps data live via
-# direct NOAA / api.nasa.gov fetches. Route files are restored on exit.
+# Dynamic route handlers (/api/spaceweather, /api/nasa, /api/mars-weather)
+# must be prerenderable: swap force-dynamic → force-static so `next build`
+# executes each once at build time and bakes a snapshot; the client-side code
+# keeps data live via direct NOAA / api.nasa.gov fetches. Route files are
+# restored on exit.
 set -euo pipefail
 # Repo root, resolved from this script's location (works locally and on CI)
 cd "$(dirname "$0")/.."
 
-ROUTES=(src/app/api/spaceweather/route.ts src/app/api/nasa/route.ts)
+ROUTES=(src/app/api/spaceweather/route.ts src/app/api/nasa/route.ts src/app/api/mars-weather/route.ts)
 BACKUPS=()
 cleanup() {
   for i in "${!ROUTES[@]}"; do

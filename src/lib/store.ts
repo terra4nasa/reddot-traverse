@@ -272,7 +272,9 @@ const vp = () => {
     const r = root.getBoundingClientRect();
     return { w: r.width / zoom, h: r.height / zoom };
   }
-  return { w: window.innerWidth / zoom, h: window.innerHeight / zoom };
+  /* .visor-solid not mounted yet (store boots on the map view) — approximate
+     the visor surface by subtracting the app chrome (TopBar + status bar) */
+  return { w: window.innerWidth / zoom, h: Math.max(320, (window.innerHeight - 100) / zoom) };
 };
 
 /**
@@ -293,11 +295,21 @@ function buildHudPanels(
   for (const id of HUD_PANEL_ORDER) {
     const s = stored[id];
     if (!s) continue;
-    merged[id] = {
-      ...merged[id],
-      ...s,
-      w: Math.max(hudPanelDef(id).minW, Math.round(s.w ?? merged[id].w)),
-    };
+    /* clamp saved rects into the current viewport — a layout stored on a
+       bigger window (or an older version) must never open off-screen */
+    const rect = clampPanelRect(
+      {
+        x: s.x ?? merged[id].x,
+        y: s.y ?? merged[id].y,
+        w: Math.max(hudPanelDef(id).minW, Math.round(s.w ?? merged[id].w)),
+        h: s.h ?? merged[id].h,
+      },
+      hudPanelDef(id),
+      w,
+      h,
+      !!s.collapsed
+    );
+    merged[id] = { ...merged[id], ...s, ...rect };
   }
   return merged;
 }const DEFAULT_COMMS: CommsState = {

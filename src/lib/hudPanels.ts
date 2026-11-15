@@ -70,13 +70,15 @@ export const FRAME_CLIPS: Record<PanelShape, string> = {
 };
 
 export const HUD_PANELS: HudPanelDef[] = [
-  { id: "control", label: "Control panel", hint: "walk · view · prefs · drills", w: 226, estH: 170, minW: 214, minH: 130, resizable: false, shape: "console" },
+  /* control renders ~289 px tall at its fixed 226 px width (4 button rows +
+     hint) — keep the slot ahead of it so nothing packs under it overlapping */
+  { id: "control", label: "Control panel", hint: "walk · view · prefs · drills", w: 226, estH: 268, minW: 214, minH: 130, resizable: false, shape: "console" },
   { id: "nav", label: "Navigation", hint: "next WP · range · ETA · progress", w: 300, estH: 124, minW: 264, minH: 96, resizable: true, shape: "wedge" },
   { id: "eva", label: "EVA telemetry", hint: "O₂ bar · dose · LST clock", w: 188, estH: 154, minW: 172, minH: 122, resizable: true, shape: "octagon" },
   { id: "bio", label: "Biometrics", hint: "heart · core temp · work rate", w: 186, estH: 178, minW: 172, minH: 140, resizable: true, shape: "octagon" },
   { id: "terrain", label: "Terrain underfoot", hint: "elev · slope · speed · sun · air", w: 166, estH: 172, minW: 152, minH: 140, resizable: true, shape: "octagon" },
   { id: "rad", label: "Radiation", hint: "dose rate · cumulative · space wx", w: 178, estH: 172, minW: 166, minH: 140, resizable: true, shape: "octagon" },
-  { id: "wx", label: "Mars weather — live", hint: "MSL REMS · Gale Crater temps", w: 178, estH: 148, minW: 166, minH: 110, resizable: true, shape: "octagon" },
+  { id: "wx", label: "Mars weather — live", hint: "MSL REMS · Gale Crater temps", w: 178, estH: 160, minW: 166, minH: 110, resizable: true, shape: "octagon" },
   { id: "location", label: "Location beacon", hint: "live position · region · elev", w: 210, estH: 118, minW: 196, minH: 92, resizable: true, shape: "octagon" },
   { id: "comms", label: "Comms link", hint: "status · relay · last message", w: 192, estH: 196, minW: 178, minH: 150, resizable: true, shape: "wedge" },
   { id: "minimap", label: "Traverse mini-map", hint: "top-down route · walker cone", w: 150, estH: 156, minW: 128, minH: 128, resizable: true, shape: "octagon" },
