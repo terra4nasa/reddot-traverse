@@ -1,8 +1,8 @@
 services:
-  ares-vis:
+  reddot-traverse:
     build: .
-    image: ares-vis:latest
-    container_name: ares-vis
+    image: reddot-traverse:latest
+    container_name: reddot-traverse
     ports:
       - "3000:3000"
     restart: unless-stopped

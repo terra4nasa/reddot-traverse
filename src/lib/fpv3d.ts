@@ -1,4 +1,4 @@
-// ARES-VIS first-person WebGL engine — real-time 3D Mars surface scene.
+// Red Dot Traverse first-person WebGL engine — real-time 3D Mars surface scene.
 //
 // Terrain : HRSC-MOLA hybrid DEM (200 m/px) displaced mesh + fractal detail,
 //           draped with the Esri/CTX 20 m/px optical window, exp2 dust fog,

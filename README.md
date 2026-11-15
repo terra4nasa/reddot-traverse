@@ -1,16 +1,16 @@
-# ARES-VIS — Elysium Marswalk Planner
+# Red Dot Traverse — Elysium Traverse Planner
 
 **NASA Space Apps 2026 · Interplanetary Survival Guide: Martian Map**
 
-**🔴 Live app:** **[https://ares-vis.vercel.app](https://ares-vis.vercel.app/)**
+**🔴 Live app:** **[https://reddot-traverse.vercel.app](https://reddot-traverse.vercel.app/)**
 — full 2D planner + 3D visor + NASA live data (APOD, EPIC, NEO watch, space weather).
 
-ARES-VIS fuses decades of robotic Mars-mission data into one hyper-local planning
-tool for a Marswalk across **Elysium Planitia** — the plains where NASA's InSight
+Red Dot Traverse fuses decades of robotic Mars-mission data into one hyper-local planning
+tool for a Traverse across **Elysium Planitia** — the plains where NASA's InSight
 lander listened to Mars quakes for four years. Plan the EVA on a 2D orbital map,
 then step into a first-person **3D helmet visor** and physically walk the route.
 
-> **ARES** = the Greek counterpart of Mars · **VIS** = the helmet **VIS**or
+> **Red Dot** = Singapore, the Little Red Dot on the world map · **Traverse** = the surface route we plan and walk
 
 ## Features
 
@@ -56,8 +56,8 @@ echo "NASA_API_KEY=your_key_here" > .env.local   # gitignored, never committed
 ```
 
 ```bash
-git clone https://github.com/terra4nasa/ARES-VIS.git
-cd ARES-VIS
+git clone https://github.com/terra4nasa/reddot-traverse.git
+cd reddot-traverse
 npm install        # or: bun install
 npm run dev        # or: bun run dev
 ```
@@ -89,19 +89,19 @@ Keep it alive with **pm2**:
 
 ```bash
 npm i -g pm2
-pm2 start npm --name ares-vis -- run start:node
+pm2 start npm --name reddot-traverse -- run start:node
 pm2 save && pm2 startup    # auto-start on boot
 ```
 
-…or a **systemd** unit (`/etc/systemd/system/ares-vis.service`):
+…or a **systemd** unit (`/etc/systemd/system/reddot-traverse.service`):
 
 ```ini
 [Unit]
-Description=ARES-VIS Marswalk Planner
+Description=Red Dot Traverse Planner
 After=network.target
 
 [Service]
-WorkingDirectory=/opt/ares-vis
+WorkingDirectory=/opt/reddot-traverse
 ExecStart=/usr/bin/node .next/standalone/server.js
 Environment=NODE_ENV=production PORT=3000
 Restart=on-failure
@@ -112,10 +112,10 @@ WantedBy=multi-user.target
 ```
 
 ```bash
-sudo systemctl enable --now ares-vis
+sudo systemctl enable --now reddot-traverse
 ```
 
-**Nginx reverse proxy** with TLS (`/etc/nginx/sites-available/ares-vis`):
+**Nginx reverse proxy** with TLS (`/etc/nginx/sites-available/reddot-traverse`):
 
 ```nginx
 server {
@@ -145,16 +145,16 @@ lean `node:22-alpine` runtime, ~180 MB image).
 
 ```bash
 # plain Docker
-docker build -t ares-vis .
-docker run -d -p 3000:3000 --name ares-vis ares-vis
+docker build -t reddot-traverse .
+docker run -d -p 3000:3000 --name reddot-traverse reddot-traverse
 
 # or Docker Compose
 docker compose up -d --build
 ```
 
-App: http://localhost:3000 · logs: `docker logs -f ares-vis`
+App: http://localhost:3000 · logs: `docker logs -f reddot-traverse`
 Health check is built into the compose file. To change the port:
-`docker run -p 8080:3000 ares-vis`.
+`docker run -p 8080:3000 reddot-traverse`.
 
 ## 3 · Cloud hosts
 
@@ -181,8 +181,8 @@ GitHub Pages only serves static files, so the deploy uses Next's
 The included workflow (`.github/workflows/github-pages.yml`) then builds and
 publishes on every push to `main`:
 
-- site URL: `https://terra4nasa.github.io/ARES-VIS/`
-- `NEXT_BASE_PATH=/ARES-VIS` is applied automatically so all assets resolve
+- site URL: `https://terra4nasa.github.io/reddot-traverse/`
+- `NEXT_BASE_PATH=/reddot-traverse` is applied automatically so all assets resolve
 
 **What works on Pages** — the full 2D planner, all map layers, the 3D visor,
 manual walking, sample collection and brief export (all client-rendered).
@@ -193,7 +193,7 @@ app automatically falls back to fetching NOAA SWPC directly from the browser
 Manual local export (optional):
 
 ```bash
-NEXT_OUTPUT=export NEXT_BASE_PATH=/ARES-VIS npx next build
+NEXT_OUTPUT=export NEXT_BASE_PATH=/reddot-traverse npx next build
 # static site lands in ./out
 ```
 

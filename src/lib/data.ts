@@ -1,4 +1,4 @@
-// ARES-VIS mission data — InSight / Elysium Planitia
+// Red Dot Traverse mission data — InSight / Elysium Planitia
 // Terrain values sampled from the real HRSC-MOLA blended DEM (see scripts/generate_assets.py)
 
 export const SITE = {

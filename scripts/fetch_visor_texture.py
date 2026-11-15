@@ -46,7 +46,7 @@ def tile_for(lon: float, lat: float) -> tuple[int, int]:
 
 def fetch_tile(x: int, y: int) -> Image.Image:
     url = BASE.format(z=Z, y=y, x=x)
-    req = urllib.request.Request(url, headers={"User-Agent": "ares-vis-asset-gen/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "reddot-traverse-asset-gen/1.0"})
     with urllib.request.urlopen(req, timeout=45) as r:
         data = r.read()
     return Image.open(io.BytesIO(data)).convert("L")

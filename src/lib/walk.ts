@@ -1,4 +1,4 @@
-// Marswalk simulation geometry — position/terrain lookup at a distance along the route
+// Traverse simulation geometry — position/terrain lookup at a distance along the route
 import { haversineKm, bearingDeg, slopeAdjustedSpeed } from "./mars";
 import type { Sample } from "./terrain";
 import type { RouteWaypoint, EvaParams } from "./store";

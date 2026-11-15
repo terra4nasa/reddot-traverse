@@ -151,7 +151,7 @@ export function ConditionsPanel() {
             <p className="text-[11px] leading-relaxed">
               <b className="text-[var(--hud-amber)]">Direct-to-Earth:</b> one-way light time{" "}
               <b className="text-[var(--hud-cyan)]">{sw.earthMars.lightMin.toFixed(1)} min</b> — voice loops require
-              ~{Math.round(sw.earthMars.lightMin * 2)} min round trip. All real-time decisions during the Marswalk are
+              ~{Math.round(sw.earthMars.lightMin * 2)} min round trip. All real-time decisions during the Traverse are
               local; the plan is uploaded before suit-up.
             </p>
           )}

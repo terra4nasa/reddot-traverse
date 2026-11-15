@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the static GitHub Pages export (out/) for ARES-VIS.
+# Build the static GitHub Pages export (out/) for Red Dot Traverse.
 # Dynamic route handlers (/api/spaceweather, /api/nasa) must be prerenderable:
 # swap force-dynamic → force-static so `next build` executes each once at
 # build time and bakes a snapshot; the client-side code keeps data live via
@@ -24,7 +24,7 @@ for ROUTE in "${ROUTES[@]}"; do
   sed -i 's/export const dynamic = "force-dynamic";/export const dynamic = "force-static";/' "$ROUTE"
 done
 
-NEXT_OUTPUT=export NEXT_BASE_PATH=/ARES-VIS npx next build
+NEXT_OUTPUT=export NEXT_BASE_PATH=/reddot-traverse npx next build
 
 # Pages' Jekyll step would ignore _next/ without this marker
 touch out/.nojekyll

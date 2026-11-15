@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ARES-VIS asset generator v2 — parallel HTTP-range TIFF reader.
+Red Dot Traverse asset generator v2 — parallel HTTP-range TIFF reader.
 Pulls exact row bands from NASA PDS GeoTIFFs (USGS Astrogeology S3) at ~25 MB/s.
 Datasets:
   - HRSC-MOLA blended DEM 200 m/px (global, Int16) -> relief PNGs, slope hazard, terrain grids
@@ -28,7 +28,7 @@ DEM_OVR2 = DEM_SRC + ".ovr"  # overview level 2 = 1600 m/px (third listed overvi
 THEMIS_DAY = f"{S3}/THEMIS_controlled_mosaics/Elysium_DayIR_31July2014/THEMIS_DayIR_ControlledMosaic_Elysium_00N135E_100mpp.tif"
 THEMIS_DAY_LBL = THEMIS_DAY.replace(".tif", ".lbl")
 THEMIS_NIGHT = f"{S3}/THEMIS_controlled_mosaics/Elysium_NightIR_30April2015/THEMIS_NightIR_ControlledMosaic_Elysium_00N135E_100mpp.tif"
-UA = {"User-Agent": "ARES-VIS/1.0 (Space Apps 2026 educational use)"}
+UA = {"User-Agent": "Red Dot Traverse/1.0 (Space Apps 2026 educational use)"}
 
 TYPESIZE = {1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 1, 7: 1, 8: 2, 9: 4, 10: 8, 11: 4, 12: 8, 16: 8, 17: 8}
 

@@ -1,9 +1,9 @@
 "use client";
 /**
- * ARES-VIS helmet visor — immersive Marswalk HUD.
+ * Red Dot Traverse helmet visor — immersive Traverse HUD.
  *
  * VisorOverlay renders when visorMode is on:
- *  - StandbyHud: visor configured, "BEGIN MARSWALK" launcher
+ *  - StandbyHud: visor configured, "BEGIN TRAVERSE" launcher
  *  - WalkHud:    live telemetry while physically walking the route (WalkEngine)
  *  - VisorPrefs: per-block display preferences (persisted per user)
  */
@@ -1087,7 +1087,7 @@ function StandbyHud({ prefs, onPrefs }: { prefs: VisorPrefs; onPrefs: () => void
       <div className="pointer-events-auto w-[min(430px,calc(100%-32px))]">
         <VisorCard className="border-[rgba(255,122,47,0.45)] text-center">
           <div className="hud-label">visor mode · hud configured</div>
-          <div className="font-display mt-1 text-lg text-[var(--hud-amber)] hud-glow">MARSWALK VISOR READY</div>
+          <div className="font-display mt-1 text-lg text-[var(--hud-amber)] hud-glow">TRAVERSE VISOR READY</div>
           <div className="mt-2 rounded-sm border border-[rgba(84,224,255,0.35)] bg-[rgba(84,224,255,0.06)] px-2 py-1.5">
             <div className="hud-label">current location · live beacon</div>
             <div className="font-display mt-0.5 text-[13px] text-[var(--hud-cyan)] hud-glow-cyan">{site.name}</div>
@@ -1100,7 +1100,7 @@ function StandbyHud({ prefs, onPrefs }: { prefs: VisorPrefs; onPrefs: () => void
             {blocksOn.length > 0 ? blocksOn.map((b) => <span key={b} className="hud-chip !text-[var(--hud-cyan)]">{b}</span>) : <span className="hud-chip">all blocks off — open prefs</span>}
           </div>
           <button className="hud-btn active mt-4 w-full !py-2.5" disabled={!canWalk} onClick={() => useStore.getState().startWalk()}>
-            <Footprints className="h-4 w-4" /> {canWalk ? "begin marswalk" : "plan a route first (≥2 waypoints)"}
+            <Footprints className="h-4 w-4" /> {canWalk ? "begin traverse" : "plan a route first (≥2 waypoints)"}
           </button>
           <div className="mt-2 grid grid-cols-3 gap-1.5">
             <button className="hud-btn !min-h-0 !flex-col !gap-0.5 !py-1.5 text-[8px]" onClick={() => openPanel("locations")} title="Choose a location — named sites, search, coordinates">

@@ -168,7 +168,7 @@ function initialLayers(): LayerState[] {
   }));
 }
 
-/** First-visit demo route: MARSWALK-01 around Homestead Hollow */
+/** First-visit demo route: TRAVERSE-01 around Homestead Hollow */
 function seedRoute(): RouteWaypoint[] {
   return POIS.filter((p) => ["base", "sc1", "sc2", "sc5"].includes(p.id)).map((p) => ({
     id: `seed-${p.id}`,
@@ -295,7 +295,7 @@ export const useStore = create<AppStore>((set, get) => {
       const s = get();
       if (s.route.length < 2) return false;
       set({
-        walk: { active: true, playing: true, manual: false, speedMult: s.walk.speedMult, readout: null, event: { id: eventId++, msg: `MARSWALK DEPARTED · ${s.route[0].name}`, kind: "info" }, skipDwellNonce: 0, jumpNonce: 0 },
+        walk: { active: true, playing: true, manual: false, speedMult: s.walk.speedMult, readout: null, event: { id: eventId++, msg: `TRAVERSE DEPARTED · ${s.route[0].name}`, kind: "info" }, skipDwellNonce: 0, jumpNonce: 0 },
         collected: [],
         planMode: false,
         visorMode: true,
@@ -534,7 +534,7 @@ export const useStore = create<AppStore>((set, get) => {
 // hydrate layers once on client mount (preset + persisted customs)
 if (typeof window !== "undefined") {
   // debugging handle (harmless in prod, used by E2E checks)
-  (window as unknown as { __ARES_STORE__?: typeof useStore }).__ARES_STORE__ = useStore;
+  (window as unknown as { __RDT_STORE__?: typeof useStore }).__RDT_STORE__ = useStore;
   const firstVisit = !localStorage.getItem(PERSIST_KEY);
   if (!firstVisit) {
     const p = loadPersisted();

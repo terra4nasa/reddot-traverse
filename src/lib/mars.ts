@@ -1,4 +1,4 @@
-// Mars geo/math utilities for ARES-VIS
+// Mars geo/math utilities for Red Dot Traverse
 export const MARS_RADIUS_KM = 3396.19;
 export const MARS_M_PER_DEG = 59271.4; // meters per degree of arc (sphere)
 export const MARS_GRAVITY = 3.71; // m/s^2

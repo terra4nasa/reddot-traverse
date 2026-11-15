@@ -29,7 +29,7 @@ export function RoutePanel() {
   }));
 
   return (
-    <PanelFrame id="route" title="MARSWALK ROUTE" subtitle="eva planner · on-board solve — instant">
+    <PanelFrame id="route" title="TRAVERSE ROUTE" subtitle="eva planner · on-board solve — instant">
       <div className="space-y-4">
         {/* quick actions */}
         <section className="rounded-sm border border-[rgba(255,122,47,0.35)] bg-[rgba(255,122,47,0.05)] p-3">
@@ -123,7 +123,7 @@ export function RoutePanel() {
         {plan.ok && (
           <div className="flex items-center gap-2 rounded-sm border border-[rgba(74,222,128,0.4)] bg-[rgba(74,222,128,0.07)] p-2 text-[11px] text-[var(--hud-green)]">
             <CircleCheck className="h-4 w-4 shrink-0" />
-            <span>EVA plan within safety margins — GO for Marswalk.</span>
+            <span>EVA plan within safety margins — GO for Traverse.</span>
           </div>
         )}
 

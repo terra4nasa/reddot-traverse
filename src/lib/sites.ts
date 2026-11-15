@@ -1,4 +1,4 @@
-// Mars gazetteer + location services for ARES-VIS.
+// Mars gazetteer + location services for Red Dot Traverse.
 // Named sites use widely published landing-site / feature coordinates
 // (IAU east-positive, converted to ±180° for the EPSG:4326 map). Values are
 // approximate MOLA figures — planning context, not survey data.

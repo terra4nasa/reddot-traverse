@@ -283,7 +283,7 @@ function EpicTab() {
         </div>
       )}
       <p className="text-[10px] leading-snug text-[var(--hud-dim)]">
-        What every astronaut on a Marswalk keeps in mind: everything the crew protects is inside that pale blue
+        What every astronaut on a Traverse keeps in mind: everything the crew protects is inside that pale blue
         disc, imaged hours ago by NASA&apos;s DSCOVR spacecraft.
       </p>
     </div>

@@ -4,7 +4,7 @@ import type { NextConfig } from "next";
  * - default            → "standalone" server build (Docker / self-hosting / cloud)
  * - NEXT_OUTPUT=export → fully static site for GitHub Pages (client-only; the
  *                        space-weather panel falls back to direct NOAA fetches)
- * NEXT_BASE_PATH=/ARES-VIS sets the project-page base path for the Pages deploy. */
+ * NEXT_BASE_PATH=/reddot-traverse sets the project-page base path for the Pages deploy. */
 const isExport = process.env.NEXT_OUTPUT === "export";
 const basePath = process.env.NEXT_BASE_PATH || undefined;
 

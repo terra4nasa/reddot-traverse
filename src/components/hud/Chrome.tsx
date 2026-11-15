@@ -79,9 +79,9 @@ export function TopBar() {
         <Orbit className="h-6 w-6 shrink-0 text-[var(--hud-orange)]" />
         <div className="min-w-0">
           <div className="font-display truncate text-sm font-bold tracking-[0.22em] text-[var(--hud-amber)] hud-glow">
-            ARES-VIS <span className="hidden text-[10px] font-normal tracking-[0.3em] text-[var(--hud-dim)] sm:inline">v2.1</span>
+            RED DOT TRAVERSE <span className="hidden text-[10px] font-normal tracking-[0.3em] text-[var(--hud-dim)] sm:inline">v2.1</span>
           </div>
-          <div className="hud-label truncate">Elysium Marswalk Planner · Sol Operations</div>
+          <div className="hud-label truncate">Elysium Traverse Planner · Sol Operations</div>
         </div>
       </div>
 

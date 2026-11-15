@@ -1,4 +1,4 @@
-// ARES-VIS layer registry — every map layer is defined here so new data
+// Red Dot Traverse layer registry — every map layer is defined here so new data
 // sources can be added declaratively (or at runtime via the Add Layer dialog).
 export type LayerType = "xyz" | "image" | "geojson";
 
@@ -105,7 +105,7 @@ export const PRESET_LAYERS: LayerDef[] = [
     src: "assets/img/slope_hazard.png",
     bounds: [3.9, 134.8, 5.1, 136.4],
     mission: "Derived from HRSC + MOLA DEM",
-    instrument: "ARES-VIS slope classification",
+    instrument: "Red Dot Traverse slope classification",
     resolution: "200 m/px",
     citation: "Slope classes computed from USGS/PDS HRSC-MOLA blended DEM v2",
     defaultVisible: true,
@@ -161,10 +161,10 @@ export const PRESET_LAYERS: LayerDef[] = [
     group: "SCIENCE",
     type: "geojson",
     dataKey: "pois",
-    mission: "ARES-VIS mission design",
+    mission: "Red Dot Traverse mission design",
     instrument: "Compiled from InSight / Odyssey / MRO data",
     resolution: "point targets",
-    citation: "Mission-planning targets selected by the ARES-VIS science team",
+    citation: "Mission-planning targets selected by the Red Dot Traverse science team",
     defaultVisible: true,
     defaultOpacity: 1,
   },
